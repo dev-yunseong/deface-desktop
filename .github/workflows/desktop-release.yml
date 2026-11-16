@@ -2,6 +2,7 @@ name: Windows desktop release
 
 on:
   push:
+    branches: ['desktop-app']
     tags: ['desktop-v*']
   workflow_dispatch:
 
