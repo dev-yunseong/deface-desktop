@@ -35,7 +35,8 @@ def draw_det(
         draw_scores: bool = False,
         ovcolor: Tuple[int] = (0, 0, 0),
         replaceimg = None,
-        mosaicsize: int = 20
+        mosaicsize: int = 20,
+        mosaic_ellipse: bool = False
 ):
     if replacewith == 'solid':
         cv2.rectangle(frame, (x1, y1), (x2, y2), ovcolor, -1)
@@ -61,12 +62,20 @@ def draw_det(
         elif replaceimg.shape[2] == 4:  # RGBA
             frame[y1:y2, x1:x2] = frame[y1:y2, x1:x2] * (1 - resized_replaceimg[:, :, 3:] / 255) + resized_replaceimg[:, :, :3] * (resized_replaceimg[:, :, 3:] / 255)
     elif replacewith == 'mosaic':
+        roi = frame[y1:y2 + 1, x1:x2 + 1]
+        original = roi.copy() if mosaic_ellipse and roi.size else None
         for y in range(y1, y2, mosaicsize):
             for x in range(x1, x2, mosaicsize):
                 pt1 = (x, y)
                 pt2 = (min(x2, x + mosaicsize - 1), min(y2, y + mosaicsize - 1))
                 color = (int(frame[y, x][0]), int(frame[y, x][1]), int(frame[y, x][2]))
                 cv2.rectangle(frame, pt1, pt2, color, -1)
+        if original is not None:
+            height, width = roi.shape[:2]
+            mask = np.zeros((height, width), dtype=np.uint8)
+            cv2.ellipse(mask, (width // 2, height // 2), (width // 2, height // 2),
+                        0, 0, 360, 1, -1)
+            np.copyto(roi, original, where=(mask == 0)[..., None])
     elif replacewith == 'none':
         pass
     if draw_scores:
@@ -78,7 +87,7 @@ def draw_det(
 
 def anonymize_frame(
         dets, frame, mask_scale,
-        replacewith, ellipse, draw_scores, replaceimg, mosaicsize
+        replacewith, ellipse, draw_scores, replaceimg, mosaicsize, mosaic_ellipse=False
 ):
     for i, det in enumerate(dets):
         boxes, score = det[:4], det[4]
@@ -93,7 +102,8 @@ def anonymize_frame(
             ellipse=ellipse,
             draw_scores=draw_scores,
             replaceimg=replaceimg,
-            mosaicsize=mosaicsize
+            mosaicsize=mosaicsize,
+            mosaic_ellipse=mosaic_ellipse
         )
 
 

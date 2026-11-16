@@ -28,6 +28,9 @@ small, p { color: #b9c4d4; }
 p { margin: 0 0 12px; overflow-wrap: anywhere; }
 .settings { display: flex; align-items: center; flex-wrap: wrap; gap: 22px; }
 .settings label { display: flex; align-items: center; gap: 10px; }
+.mosaic-settings { margin-top: 14px; padding-top: 14px; border-top: 1px solid #303744; }
+input[type="range"] { width: clamp(90px, 23vw, 180px); accent-color: #a9bcff; }
+#mosaic-size-value { min-width: 3em; font-variant-numeric: tabular-nums; }
 .primary { background: #a9bcff; color: #151d30; font-weight: 700; border-color: transparent; }
 #status { margin: 12px 0 0; white-space: pre-line; }
 #status:empty { display: none; }

@@ -3,6 +3,10 @@ const source = document.querySelector("#source");
 const filename = document.querySelector("#filename");
 const sourceDetail = document.querySelector("#source-detail");
 const mask = document.querySelector("#mask");
+const mosaicSettings = document.querySelector("#mosaic-settings");
+const mosaicShape = document.querySelector("#mosaic-shape");
+const mosaicSize = document.querySelector("#mosaic-size");
+const mosaicSizeValue = document.querySelector("#mosaic-size-value");
 const audio = document.querySelector("#audio");
 const exportButton = document.querySelector("#export");
 const updateButton = document.querySelector("#update");
@@ -21,10 +25,21 @@ function setBusy(value) {
   busy = value;
   source.disabled = value;
   mask.disabled = value;
+  mosaicShape.disabled = value;
+  mosaicSize.disabled = value;
   audio.disabled = value;
   updateButton.disabled = value;
   exportButton.disabled = value || !inputPath;
 }
+
+mask.addEventListener("change", () => {
+  mosaicSettings.hidden = mask.value !== "mosaic";
+});
+
+mosaicSize.addEventListener("input", () => {
+  mosaicSizeValue.textContent = mosaicSize.value + " px";
+  mosaicSize.setAttribute("aria-valuetext", mosaicSize.value + " 픽셀");
+});
 
 function setStatus(message, error) {
   status.textContent = message;
@@ -83,6 +98,7 @@ exportButton.addEventListener("click", async () => {
     frames.onmessage = (count) => setStatus(count.toLocaleString("ko-KR") + " 프레임 처리");
     await core.invoke("anonymize", {
       input: inputPath, output: outputPath, mask: mask.value, keepAudio: audio.checked, progress: frames,
+      mosaic: { blockSize: mosaicSize.valueAsNumber, ellipse: mosaicShape.value === "ellipse" },
     });
     preview.src = core.convertFileSrc(outputPath);
     output.textContent = outputPath;

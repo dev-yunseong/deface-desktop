@@ -32,6 +32,18 @@
         </label>
         <label class="checkbox"><input type="checkbox" id="audio" checked> 오디오 유지</label>
       </div>
+      <div id="mosaic-settings" class="settings mosaic-settings" hidden>
+        <label>가릴 영역
+          <select id="mosaic-shape">
+            <option value="rectangle">사각형</option>
+            <option value="ellipse">타원형</option>
+          </select>
+        </label>
+        <label>블록 크기
+          <input id="mosaic-size" type="range" min="4" max="64" step="1" value="20" aria-valuetext="20 픽셀">
+          <span id="mosaic-size-value" aria-hidden="true">20 px</span>
+        </label>
+      </div>
     </section>
     <section class="export" aria-labelledby="export-title">
       <h2 id="export-title">MP4 내보내기</h2>

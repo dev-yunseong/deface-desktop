@@ -14,6 +14,13 @@ use tauri_plugin_updater::UpdaterExt;
 #[derive(Default)]
 struct Operation(Mutex<()>);
 
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MosaicOptions {
+    block_size: u8,
+    ellipse: bool,
+}
+
 fn lock_operation(app: &tauri::AppHandle) -> Result<tauri::State<'_, Operation>, String> {
     app.try_state::<Operation>()
         .ok_or_else(|| "App state unavailable.".into())
@@ -57,6 +64,7 @@ async fn anonymize(
     output: PathBuf,
     mask: String,
     keep_audio: bool,
+    mosaic: MosaicOptions,
     progress: Channel<u64>,
 ) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
@@ -80,6 +88,9 @@ async fn anonymize(
         if !matches!(mask.as_str(), "blur" | "mosaic" | "solid") {
             return Err("Choose a valid face mask.".into());
         }
+        if !(4..=64).contains(&mosaic.block_size) {
+            return Err("Choose a mosaic block size between 4 and 64 pixels.".into());
+        }
         let parent = output.parent().ok_or("Invalid output folder.")?;
         let temp = tempfile::Builder::new()
             .prefix(".deface-")
@@ -98,6 +109,8 @@ async fn anonymize(
             .arg(&input)
             .arg(temp.as_os_str())
             .arg(mask)
+            .arg("--mosaic-size")
+            .arg(mosaic.block_size.to_string())
             .arg("--ffmpeg")
             .arg(ffmpeg)
             .stdin(Stdio::null())
@@ -105,6 +118,9 @@ async fn anonymize(
             .stderr(errors.try_clone().map_err(|error| error.to_string())?);
         if keep_audio {
             engine.arg("--keep-audio");
+        }
+        if mosaic.ellipse {
+            engine.arg("--mosaic-ellipse");
         }
         let mut child = engine
             .spawn()

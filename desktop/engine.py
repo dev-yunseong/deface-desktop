@@ -16,7 +16,11 @@ def main():
     parser.add_argument("mask", choices=("blur", "mosaic", "solid"))
     parser.add_argument("--ffmpeg", required=True)
     parser.add_argument("--keep-audio", action="store_true")
+    parser.add_argument("--mosaic-size", type=int, default=20, metavar="PX")
+    parser.add_argument("--mosaic-ellipse", action="store_true")
     args = parser.parse_args()
+    if not 4 <= args.mosaic_size <= 64:
+        parser.error("--mosaic-size must be between 4 and 64 pixels")
     os.environ["IMAGEIO_FFMPEG_EXE"] = args.ffmpeg
 
     detector = CenterFace(backend="opencv")
@@ -37,7 +41,10 @@ def main():
         with imageio.get_writer(args.output, format="FFMPEG", **options) as writer:
             for frames, frame in enumerate(reader, start=1):
                 faces, _ = detector(frame, threshold=0.2)
-                anonymize_frame(faces, frame, 1.3, args.mask, False, False, None, 20)
+                anonymize_frame(
+                    faces, frame, 1.3, args.mask, False, False, None,
+                    args.mosaic_size, mosaic_ellipse=args.mosaic_ellipse,
+                )
                 writer.append_data(frame)
                 if frames == 1 or frames % 10 == 0:
                     print(frames, flush=True)
