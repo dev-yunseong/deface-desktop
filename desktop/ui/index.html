@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deface Desktop</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Deface Desktop</h1>
+    <button id="update" type="button">업데이트 확인</button>
+  </header>
+  <main>
+    <section aria-labelledby="source-title">
+      <h2 id="source-title">원본 영상</h2>
+      <button id="source" class="dropzone" type="button">
+        <span id="filename">영상 파일 선택</span>
+        <small id="source-detail">클릭하거나 영상 파일을 끌어다 놓으세요</small>
+      </button>
+    </section>
+    <section aria-labelledby="settings-title">
+      <h2 id="settings-title">얼굴 가리기</h2>
+      <div class="settings">
+        <label>가리는 방식
+          <select id="mask">
+            <option value="blur">흐리게</option>
+            <option value="mosaic">모자이크</option>
+            <option value="solid">검은 상자</option>
+          </select>
+        </label>
+        <label class="checkbox"><input type="checkbox" id="audio" checked> 오디오 유지</label>
+      </div>
+    </section>
+    <section class="export" aria-labelledby="export-title">
+      <h2 id="export-title">MP4 내보내기</h2>
+      <p>영상은 이 기기에서 처리됩니다.</p>
+      <button id="export" class="primary" type="button" disabled>저장 위치 선택 및 처리</button>
+      <progress id="progress" aria-label="영상 처리 중" hidden></progress>
+      <p id="status" role="status"></p>
+      <details id="error" hidden><summary>오류 상세</summary><pre id="error-text"></pre></details>
+      <div id="result" hidden>
+        <video id="preview" controls playsinline aria-label="처리 결과"></video>
+        <p id="output"></p>
+        <p>검출되지 않은 얼굴은 그대로 남을 수 있습니다. 공유하기 전에 결과를 확인하세요.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,96 @@
+name: Windows desktop release
+
+on:
+  push:
+    tags: ['desktop-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install Rust
+        run: rustup update stable
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: make diffutils mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm
+      - name: Build FFmpeg
+        shell: msys2 {0}
+        run: bash desktop/build-ffmpeg.sh
+      - name: Check release version and signing configuration
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        shell: pwsh
+        run: |
+          $version = (Get-Content desktop/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_NAME -ne "desktop-v$version") {
+            throw "Tag must match the Tauri app version (desktop-v$version)."
+          }
+          if (!$env:TAURI_SIGNING_PRIVATE_KEY) { throw 'Configure TAURI_SIGNING_PRIVATE_KEY before publishing.' }
+      - name: Build and test video engine
+        shell: pwsh
+        run: |
+          python -m pip install . "pyinstaller>=6,<7"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./desktop/build-engine.ps1
+          python desktop/smoke-engine.py
+      - name: Install Tauri CLI
+        working-directory: desktop
+        run: npm ci
+      - name: Build installer for verification
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        working-directory: desktop
+        run: npm run tauri -- build --target x86_64-pc-windows-msvc
+      - uses: actions/upload-artifact@v4
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        with:
+          name: deface-desktop-windows-x64
+          path: |
+            desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            desktop/.engine/ffmpeg-9.0.2.tar.xz
+          if-no-files-found: error
+      - name: Sign and publish Windows installer
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        with:
+          projectPath: desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: Deface Desktop v__VERSION__
+          releaseDraft: true
+          includeUpdaterJson: true
+          args: --target x86_64-pc-windows-msvc --config src-tauri/tauri.publish.json
+      - name: Publish completed release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          gh release upload "$env:GITHUB_REF_NAME" desktop/.engine/ffmpeg-9.0.2.tar.xz --clobber
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          gh release edit "$env:GITHUB_REF_NAME" --draft=false --latest
