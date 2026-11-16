@@ -19,7 +19,9 @@ cd "ffmpeg-$version"
 ./configure \
   --disable-autodetect --disable-doc --disable-debug --disable-network \
   --disable-ffplay --disable-ffprobe --disable-shared --enable-static \
-  --enable-mediafoundation --extra-ldflags=-static
+  --disable-encoders --enable-encoder=aac,h264_mf,pcm_s16le,rawvideo,wrapped_avframe \
+  --disable-muxers --enable-muxer=mp4,null,rawvideo,image2pipe \
+  --enable-d3d11va --enable-mediafoundation --extra-ldflags=-static
 make -j "${NUMBER_OF_PROCESSORS:-2}" ffmpeg.exe
 cp ffmpeg.exe "$bin_dir/deface-ffmpeg-x86_64-pc-windows-msvc.exe"
 cp COPYING.LGPLv2.1 "$bin_dir/FFmpeg-LICENSE.txt"

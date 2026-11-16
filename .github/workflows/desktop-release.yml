@@ -32,13 +32,6 @@ jobs:
           cache-dependency-path: desktop/package-lock.json
       - name: Install Rust
         run: rustup update stable
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          install: make diffutils mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm
-      - name: Build FFmpeg
-        shell: msys2 {0}
-        run: bash desktop/build-ffmpeg.sh
       - name: Check release version and signing configuration
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -50,6 +43,13 @@ jobs:
             throw "Tag must match the Tauri app version (desktop-v$version)."
           }
           if (!$env:TAURI_SIGNING_PRIVATE_KEY) { throw 'Configure TAURI_SIGNING_PRIVATE_KEY before publishing.' }
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: make diffutils mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm
+      - name: Build FFmpeg
+        shell: msys2 {0}
+        run: bash desktop/build-ffmpeg.sh
       - name: Build and test video engine
         shell: pwsh
         run: |
@@ -72,6 +72,7 @@ jobs:
             desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
             desktop/.engine/ffmpeg-9.0.2.tar.xz
           if-no-files-found: error
+          include-hidden-files: true
       - name: Sign and publish Windows installer
         if: startsWith(github.ref, 'refs/tags/')
         uses: tauri-apps/tauri-action@v0
